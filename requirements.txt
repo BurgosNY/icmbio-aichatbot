@@ -1,3 +1,6 @@
+langchain-pinecone
+langchain-openai
+pydantic
 python-fasthtml
 uvicorn
 claudette
