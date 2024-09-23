@@ -22,7 +22,7 @@ from langchain_core.utils.iter import batch_iterate
 from langchain_core.vectorstores import VectorStore
 from pinecone import Pinecone as PineconeClient  # type: ignore
 
-from langchain_pinecone._utilities import DistanceStrategy, maximal_marginal_relevance
+from pinecone_langchain_forked._utilities import DistanceStrategy, maximal_marginal_relevance
 
 if TYPE_CHECKING:
     from pinecone import Index
