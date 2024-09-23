@@ -20,7 +20,7 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.utils.iter import batch_iterate
 from langchain_core.vectorstores import VectorStore
-from pinecone import Pinecone as PineconeClient  # type: ignore
+from pinecone import Pinecone as PineconeClient
 
 from pinecone_langchain_forked._utilities import DistanceStrategy, maximal_marginal_relevance
 
