@@ -531,8 +531,7 @@ class PineconeVectorStore(VectorStore):
         else:
             raise ValueError(
                 f"Index '{index_name}' not found in your Pinecone project. "
-                f"Did you mean one of the following indexes: {
-                    ', '.join(index_names)}"
+                f"Did you mean other indexes?"
             )
         return index
 
@@ -554,7 +553,7 @@ class PineconeVectorStore(VectorStore):
         *,
         id_prefix: Optional[str] = None,
         **kwargs: Any,
-    ) -> "PineconeVectorStore":
+    ) -> PineconeVectorStore:
         """Construct Pinecone wrapper from raw documents.
 
         This is a user-friendly interface that:
