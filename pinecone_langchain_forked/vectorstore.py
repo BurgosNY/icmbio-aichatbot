@@ -554,7 +554,7 @@ class PineconeVectorStore(VectorStore):
         *,
         id_prefix: Optional[str] = None,
         **kwargs: Any,
-    ) -> PineconeVectorStore:
+    ) -> "PineconeVectorStore":
         """Construct Pinecone wrapper from raw documents.
 
         This is a user-friendly interface that:
