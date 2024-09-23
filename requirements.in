@@ -1,0 +1,10 @@
+pydantic
+python-fasthtml
+uvicorn
+claudette
+python-dotenv
+ell-ai
+numpy
+pinecone
+langchain
+langchain-openai

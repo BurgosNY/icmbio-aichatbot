@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from langchain_pinecone import PineconeVectorStore
 from langchain_openai import OpenAIEmbeddings
+from pinecone_langchain_forked import PineconeVectorStore
 from dotenv import load_dotenv
 import ell
 import os
