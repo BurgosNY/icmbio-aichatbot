@@ -445,11 +445,12 @@ def post(nome: str, email: str, mensagem: str):
         navbar(),
         Container(
             Titled("Obrigado pelo contato!",
-                   P(f"Olá {nome}, recebemos sua mensagem e responderemos em breve no email {
-                     email}."),
-                   A("Voltar para a página inicial",
+                   P(f"""
+Olá {nome}, recebemos sua mensagem e responderemos em breve no email {email}.
+"""),
+                A("Voltar para a página inicial",
                        href="/", cls="btn btn-primary mt-4")
-                   )
+            )
         ),
         cls="flex flex-col h-screen"
     )
