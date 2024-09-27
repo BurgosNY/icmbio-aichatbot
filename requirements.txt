@@ -7,7 +7,6 @@ ell-ai
 numpy
 pinecone
 pymongo
-pydantic
 openai
 pinecone-client
 langchain
