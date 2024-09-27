@@ -205,6 +205,7 @@ pyyaml==6.0.2
     #   langchain
     #   langchain-core
     #   uvicorn
+pymongo
 regex==2024.9.11
     # via tiktoken
 requests==2.32.3
