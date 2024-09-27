@@ -27,7 +27,7 @@ headers = [tailwind_css,
                     site_name='about.fastht.ml',
                     image='/static/logo.png',
                     url='https://about.fastht.ml')]
-app, rt = fast_app(live=True, hdrs=headers, pico=False, debug=True)
+app, rt = fast_app(hdrs=headers, pico=False)
 db = MongoClient(os.environ['MONGODB_URI'])
 collection = db['icmbio']['chatbot_responses']
 suggestions = db['icmbio']['suggestions']
