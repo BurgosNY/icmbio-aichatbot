@@ -2569,6 +2569,16 @@ html {
   background-color: rgb(251 146 60 / var(--tw-bg-opacity));
 }
 
+.bg-forest-green {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 102 51 / var(--tw-bg-opacity));
+}
+
+.bg-sea-green {
+  --tw-bg-opacity: 1;
+  background-color: rgb(51 153 102 / var(--tw-bg-opacity));
+}
+
 .p-2 {
   padding: 0.5rem;
 }
@@ -2633,14 +2643,14 @@ html {
   font-weight: 600;
 }
 
-.text-blue-600 {
-  --tw-text-opacity: 1;
-  color: rgb(37 99 235 / var(--tw-text-opacity));
-}
-
 .text-black {
   --tw-text-opacity: 1;
   color: rgb(0 0 0 / var(--tw-text-opacity));
+}
+
+.text-blue-600 {
+  --tw-text-opacity: 1;
+  color: rgb(37 99 235 / var(--tw-text-opacity));
 }
 
 .underline {
@@ -2803,6 +2813,11 @@ a {
   animation-name: zoomOut;
   animation-duration:150ms;
   animation-timing-function: ease;
+}
+
+.hover\:bg-forest-green:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 102 51 / var(--tw-bg-opacity));
 }
 
 .hover\:text-blue-800:hover {

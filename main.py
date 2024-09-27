@@ -30,6 +30,7 @@ headers = [tailwind_css,
 app, rt = fast_app(live=True, hdrs=headers, pico=False, debug=True)
 db = MongoClient(os.environ['MONGODB_URI'])
 collection = db['icmbio']['chatbot_responses']
+suggestions = db['icmbio']['suggestions']
 
 
 @rt("/")
@@ -439,20 +440,27 @@ Se você tem dúvidas, sugestões ou achou algum bug, entre em contato pelo form
 
 @ rt("/contato")
 def post(nome: str, email: str, mensagem: str):
-    # Here you would typically process the form submission
-    # For now, we'll just return a thank you message
-    return Div(
-        navbar(),
-        Container(
-            Titled("Obrigado pelo contato!",
-                   P(f"""
-Olá {nome}, recebemos sua mensagem e responderemos em breve no email {email}.
+    suggestions.insert_one({
+        'nome': nome,
+        'email': email,
+        'mensagem': mensagem,
+        'created_at': datetime.now()
+    })
+    return (
+        Title("Contato - ICMBio Guia de Gestão"),
+        Div(
+            navbar(),
+            Div(
+                Titled("Obrigado pelo contato!",
+                       P(f"""
+Recebemos sua mensagem e responderemos em breve no email {email}.
 """),
-                A("Voltar para a página inicial",
-                       href="/", cls="btn btn-primary mt-4")
-            )
-        ),
-        cls="flex flex-col h-screen"
+                       A("Voltar para a página inicial",
+                           href="/", cls="btn bg-sea-green hover:bg-forest-green mt-4")
+                       ),
+                cls="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-64px)]"
+            ),
+        )
     )
 
 # Helpers
