@@ -37,6 +37,17 @@ def resposta_instintiva(pergunta: str):
     return f"Responda à pergunta: {pergunta}."
 
 
+@ell.simple(model="gpt-4o-mini")
+def chat_history(messages: list, temperature: 0.4):
+    return [
+        ell.system("""Você é um assistente virtual do Instituto Chico Mendes de Conservação da Biodiversidade (ICMBio). 
+    Sua tarefa é responder às perguntas dos usuários relacionadas aos processos de gestão do Instituto, incluindo licenciamento ambiental, 
+    manejo integrado do fogo, uso público das unidades de conservação e outros temas afins. Fornecer respostas claras e objetivas, 
+    assegurando que estejam alinhadas com o escopo e as diretrizes do ICMBio. Evite fugir do asunto.
+    """),
+    ] + messages
+
+
 @ell.complex(model="gpt-4o-mini", response_format=EscolheMacroProcesso)
 def escolhe_macro_processo(pergunta: str) -> EscolheMacroProcesso:
     """Você é um assistente virtual do Instituto Chico Mendes de Conservação da Biodiversidade (ICMBio). 
