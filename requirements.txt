@@ -9,3 +9,4 @@ numpy
 pinecone
 langchain
 langchain-openai
+pymongo
