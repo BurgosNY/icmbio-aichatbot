@@ -7,9 +7,9 @@ ell-ai
 numpy
 pinecone
 pymongo
-langchain==0.2.14
-langchain-core==0.2.35
-langchain-openai==0.1.22
 pydantic==2.8.2
 openai==1.42.0
 pinecone-client==5.0.1
+langchain==0.2.14
+langchain-core==0.2.35
+langchain-openai==0.1.22
