@@ -4,6 +4,7 @@
 #
 #    pip-compile requirements.in
 #
+aiohttp
 annotated-types==0.7.0
     # via pydantic
 anthropic==0.34.2
