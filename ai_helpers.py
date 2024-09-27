@@ -37,8 +37,8 @@ def resposta_instintiva(pergunta: str):
     return f"Responda à pergunta: {pergunta}."
 
 
-@ell.simple(model="gpt-4o-mini")
-def chat_history(messages: list, temperature: 0.4):
+@ell.simple(model="gpt-4o-2024-08-06")
+def chat_history(messages: list, temperature: 0.3):
     return [
         ell.system("""Você é um assistente virtual do Instituto Chico Mendes de Conservação da Biodiversidade (ICMBio). 
     Sua tarefa é responder às perguntas dos usuários relacionadas aos processos de gestão do Instituto, incluindo licenciamento ambiental, 

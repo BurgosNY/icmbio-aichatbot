@@ -1,5 +1,4 @@
 aiohttp
-pydantic
 python-fasthtml
 uvicorn
 claudette
@@ -7,6 +6,10 @@ python-dotenv
 ell-ai
 numpy
 pinecone
-langchain
-langchain-openai
 pymongo
+langchain==0.0.27
+langchain-core==0.3.6
+langchain-openai==0.2.1
+pydantic==2.9.2
+openai==1.50.0
+pinecone
