@@ -31,6 +31,7 @@ app, rt = fast_app(live=True, hdrs=headers, pico=False, debug=True)
 db = MongoClient(os.environ['MONGODB_URI'])
 collection = db['icmbio']['chatbot_responses']
 suggestions = db['icmbio']['suggestions']
+feedback = db['icmbio']['feedback']
 
 
 @rt("/")
@@ -68,7 +69,7 @@ def get(session):
                                              cls="textarea textarea-bordered w-full", name="question"),
                                     Button(
                                         Div(cls="loading loading-spinner loading-lg htmx-indicator", id='loading'),
-                                        "Enviar", cls="btn btn-primary w-full mt-2"),
+                                        "Enviar", cls="btn bg-olive-green hover:bg-forest-green w-full mt-2"),
                                     Hidden(name="is_follow_up", value="false"),
                                     cls="w-full",
                                     hx_post="/chat_router", hx_target="#chat-history",
@@ -97,9 +98,6 @@ def get(session):
 
 @rt("/chat_router")
 def post(question: str, is_follow_up: str, session):
-    import time
-    time.sleep(2)
-    print(session)
     if is_follow_up == "false":
         return chat_start(session, question)
     else:
@@ -109,19 +107,19 @@ def post(question: str, is_follow_up: str, session):
 @rt("/chat_start")
 def chat_start(session, question: str):
     # Existing chat_start logic
-    first_answer = resposta_instintiva(question)
-    justificativa = first_answer
-    macro_processo = "teste_macro_processo"
+    macro_selector = escolhe_macro_processo(question)
+    process = macro_selector.content[0].parsed.macro_processo
+    reason = macro_selector.content[0].parsed.justificativa
 
     return Div(
         Div(
             chat_bubble(
-                "bot", f"Buscando documentos sobre: **{nome_macroprocesso(macro_processo)}**"),
-            chat_bubble("bot", f"💭 {justificativa}"),
+                "bot", f"Buscando documentos sobre: **{nome_macroprocesso(process)}**"),
+            chat_bubble("bot", f"💭 {reason}"),
         ),
         Hidden(name="question", value=question),
-        Hidden(name="category", value=macro_processo),
-        Hidden(name="first_answer", value=justificativa),
+        Hidden(name="category", value=process),
+        Hidden(name="first_answer", value=reason),
         hx_post="/chat",
         hx_target="#chat-history",
         hx_swap="beforeend",
@@ -135,30 +133,34 @@ def chat_start(session, question: str):
 def chat(session, question: str, category: str = None, first_answer: str = None):
     # If category and first_answer are provided, it's the first question
     if category and first_answer:
+        tentative_answer = resposta_instintiva(question)
         collection.insert_one({
             'question': question,
             'category': category,
             'messages': [
                 {'role': 'user', 'content': question},
-                {'role': 'assistant', 'content': first_answer}
+                {'role': 'assistant', 'content': tentative_answer}
             ],
             'created_at': datetime.now(),
             'session_id': session['session_id']
         })
         # Process the question using the category and first_answer
-        response = process_question(question, category, [{"role": "user", "content": question},
-                                                         {"role": "assistant", "content": first_answer}], first_answer)
+        processed_answer = process_question(question, category, [{"role": "user", "content": question},
+                                                                 {"role": "assistant", "content": tentative_answer}], tentative_answer)
+        print(processed_answer)
     else:
         obj = collection.find_one({'session_id': session['session_id']})
-        response = process_question(question, obj['category'], obj['messages'])
+        processed_answer = process_question(
+            question, obj['category'], obj['messages'])
         collection.update_one({'session_id': session['session_id']},
                               {'$push': {'messages': {'$each': [
                                   {'role': 'user', 'content': question},
-                                  {'role': 'assistant', 'content': response}]}}})
+                                  {'role': 'assistant', 'content': processed_answer}]}}})
 
     return Div(
         chat_bubble("user", question),
-        chat_bubble("bot", response),
+        chat_bubble("bot", processed_answer['answer']),
+        doc_bubble(processed_answer['references']),
         Script(
             "document.querySelector('input[name=is_follow_up]').value = 'true';"),
         cls="border-t pt-4"
@@ -168,67 +170,45 @@ def chat(session, question: str, category: str = None, first_answer: str = None)
 # Evaluate modal
 # This function is called when the user clicks on the "Avaliar resposta" button
 # It opens a modal with a rating form and a comment field
-@rt("/modal")
-def get(session):
-    session_id = session.get('session_id', 'No session ID found')
-    print(session_id)
-    return Div(
-        Div(
-            Div(
-                H1("Avalie esta interação", cls="text-xl font-bold mb-4"),
-                # Radio group with the question: "A resposta do bot foi satisfatória?"
-                P("This is the modal content. You can put anything here, like text, or a form, or an image."),
-                Div(
-                    Div(
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400", checked="checked"),
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400"),
-                    ),
-                    cls="rating"
-                ),
-                Br(),
-                Br(),
-                Button("Close", cls="btn danger",
-                       _="on click trigger closeModal"),
-                cls="modal-content"
-            ),
-            cls="modal-underlay flex items-center justify-center bg-green-200", _="on click trigger closeModal"
-        ),
-        id="modal", _="on closeModal add .closing then wait for animationend then remove me"
-    )
-
-
 def modal_rate(session):
     return Div(
         Button("Avalie esta interação", cls="btn btn-success",
                onclick="my_modal_2.showModal()"),
         Dialog(
-            Div(
-                H3("Hello!", cls="text-lg font-bold"),
-                P("Press ESC key or click outside to close", cls="py-4"),
+            Form(
+                H3("Ajude-nos a melhorar", cls="text-lg font-bold"),
+                P("A sua opinião será salva junto com a conversa para que possamos entender e aprimorar o chatbot."),
+                P("Em uma escala de 1 a 5 estrelas, como você avalia a resposta do chatbot?"),
                 Div(
                     Div(
-                        Input(type="radio", name="rating-2",
+                        Input(type="radio", name="rating", value=1,
                               cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
+                        Input(type="radio", name="rating", value=2,
+                              cls="mask mask-star-2 bg-orange-400"),
+                        Input(type="radio", name="rating", value=3,
                               cls="mask mask-star-2 bg-orange-400", checked="checked"),
-                        Input(type="radio", name="rating-2",
+                        Input(type="radio", name="rating", value=4,
                               cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
-                              cls="mask mask-star-2 bg-orange-400"),
-                        Input(type="radio", name="rating-2",
+                        Input(type="radio", name="rating", value=5,
                               cls="mask mask-star-2 bg-orange-400"),
                     ),
                     cls="rating"
                 ),
-                cls="modal-box"
+                Div(
+                    Textarea(name="impressions", placeholder="Suas impressões gerais...",
+                             cls="textarea textarea-bordered w-full", id="autoResizeTextarea"),
+                    cls="py-6"),
+                Button("Enviar feedback", type="submit",
+                       cls="btn btn-primary w-full"),
+                Script("""
+const textarea = document.getElementById('autoResizeTextarea');
+textarea.addEventListener('input', function() {
+this.style.height = 'auto';
+this.style.height = (this.scrollHeight) + 'px';});
+"""),
+                cls="modal-box",
+                method="post",
+                action="/process_feedback"
             ),
             Form(
                 Button("close"),
@@ -239,88 +219,41 @@ def modal_rate(session):
     )
 
 
+@rt("/process_feedback")
+def process_feedback(rating: int, impressions: str, session):
+    feedback.insert_one({
+        'rating': rating,
+        'impressions': impressions,
+        'created_at': datetime.now(),
+        'session_id': session['session_id']
+    })
+    print(f"Received feedback - Rating: {rating}, Impressions: {impressions}")
+    return RedirectResponse(url="/", status_code=303)
+
+
 def process_question(question, category=None, messages=None, first_answer=None):
     if category and first_answer:
-        # Logic for processing the first question
-        # You can use the category and first_answer here
-        return f"This is a response to the first question about {category}. {first_answer}"
+        mensagens = [ell.user(question), ell.system(first_answer)]
+        docs = busca_documentos(mensagens, return_collection(category), 3)
+        resposta = resposta_rag(mensagens, docs)
+        referencias = resposta.content[0].parsed.documentos
+        refs = [{'link': sanitize_filename(
+            ref.nome_do_arquivo), 'p': ref.pagina, 'arquivo': ref.nome_do_arquivo} for ref in referencias]
+        markdown = resposta.content[0].parsed.resposta
+        return {"answer": markdown, "references": refs}
     else:
         # for testing purposes
-        messages = [{"role": "user", "content": "Olá"},
-                    {"role": "assistant", "content": "Olá, como posso ajudar?"}]
-
         messages = [Message(role=message['role'], content=message['content'])
                     for message in messages]
         messages.append(Message(role="user", content=question))
+        response = chat_history(messages, temperature=0.2)
+        print(response)
 
-        # response = chat_history(messages, temperature=0.2)
-        response = """
-        Esse aqui é um teste mais **longo**, com texto em markdown, para testar a renderização de respostas mais longas. Não deixe de testar para ver como o markdown é renderizado.
-        ### Teste de título
-        Teste de título
-
-        ## Teste de sub-título
-        Teste de *sub-título*
-
-        ### Teste de sub-sub-título
-        Teste de sub-sub-título
-        """
-
-        return response
-
-
-@ rt("/chat_category")
-def post(category: str, question: str, first_answer: str):
-    mensagens = [ell.user(question), ell.system(first_answer)]
-
-    # docs = busca_documentos(mensagens, return_collection(category), 5)
-
-    print(f'Documentos encontrados. Montando resposta...\n')
-    # resposta = resposta_rag(mensagens, docs)
-
-    resposta = "teste"
-    # referencias = resposta.content[0].parsed.documentos
-    # refs = [{'link': sanitize_filename(
-    #    ref.nome_do_arquivo), 'p': ref.pagina, 'arquivo': ref.nome_do_arquivo} for ref in referencias]
-
-    refs = [{"link": "teste", "p": 1, "arquivo": "teste"}]
-
-    # markdown = resposta.content[0].parsed.resposta
-    markdown = "teste"
-
-    storage = os.environ['SUPABASE_STORAGE_URL']
-    referencia_items = [
-        Li(
-            A(
-                I(cls="fas fa-file-alt"),
-                f" {ref['arquivo']} (página {ref['p']})",
-                href=f"{storage}{ref['link']}#page={ref['p']}",
-                target="_blank",
-                rel="noopener noreferrer",
-                cls="text-blue-600 hover:text-blue-800 underline hover:underline-offset-2"
-            ),
-        ) for ref in refs
-    ]
-
-    return Div(
-        Div(
-            Div(I(cls="fas fa-robot")),
-            Div(markdown, cls="marked"),
-            Div(
-                P(I(cls="fas fa-file-alt"),
-                  P("Documentos consultados:"), cls="mt-2"),
-                Ul(
-                    *referencia_items,
-                    cls="list-disc list-inside"
-                ),
-                cls="mt-2"
-            ),
-        ),
-        id="chat_category", cls="mt-8"
-    )
-
+        return {"answer": response, "references": []}
 
 # components
+
+
 def navbar():
     return Div(
         Div(
@@ -341,7 +274,7 @@ def navbar():
         ),
         Div(
             Ul(
-                Li(A("Perguntas anteriores", href="#", cls="text-black")),
+                Li(A("Perguntas anteriores", href="/perguntas", cls="text-black")),
                 Li(A("Contato", href="/contato", cls="text-black")),
                 cls="menu menu-horizontal px-1 hidden md:flex"
             ),
@@ -377,8 +310,7 @@ def chat_bubble(sender, message):
     is_bot = sender == "bot"
     avatar_src = "static/img/onca.jpeg" if is_bot else "static/img/human-icon.png"
     chat_class = "chat-start" if is_bot else "chat-end"
-    bubble_class = "chat-bubble-accent bg-[#006633]" if is_bot else "chat-bubble-warning"
-
+    bubble_class = "bg-slate-300 text-black" if is_bot else "bg-olive-green text-black"
     return Div(
         Div(
             Div(
@@ -397,8 +329,51 @@ def chat_bubble(sender, message):
     )
 
 
+def doc_bubble(docs):
+    storage = os.environ['SUPABASE_STORAGE_URL']
+    chat_class = "chat-start"
+    bubble_class = "bg-slate-300 text-black"
+
+    if not docs:
+        content = P("Nenhum documento consultado: usando memória interna")
+    else:
+        content = Div(
+            P("Documentos consultados:"),
+            Ul(
+                *[Li(
+                    A(
+                        I(cls="fas fa-file-alt"),
+                        f" {ref['arquivo']} (página {ref['p']})",
+                        href=f"{storage}{ref['link']}#page={ref['p']}",
+                        target="_blank",
+                        rel="noopener noreferrer",
+                        cls="text-blue-600 hover:text-blue-800 underline hover:underline-offset-2"
+                    )
+                ) for ref in docs],
+                cls="list-disc list-inside"
+            )
+        )
+
+    return Div(
+        Div(
+            Div(
+                Div(
+                    Img(
+                        alt="Bot",
+                        src="static/img/onca.jpeg"
+                    ),
+                    cls="w-10 rounded-full"
+                ),
+                cls="chat-image avatar"
+            ),
+            Div(content, cls=f"chat-bubble {bubble_class}"),
+            cls=f"chat {chat_class} px-2 py-4"
+        )
+    )
 # Outras páginas
-@rt("/contato")
+
+
+@ rt("/contato")
 def get():
     return (
         Title("Contato - ICMBio Guia de Gestão"),
@@ -407,7 +382,7 @@ def get():
             Div(
                 Div(
                     Div("""
-Este site é desenvolvido pela [Co.Inteligência](https://cointeligencia.ai/), 
+Este site é desenvolvido pela [Co.Inteligência](https://cointeligencia.ai/),
 com o financiamento da [Deutsche Gesellschaft für Internationale Zusammenarbeit (GIZ) GmbH](https://www.giz.de/en/worldwide/12055.html).
 
 Se você tem dúvidas, sugestões ou achou algum bug, entre em contato pelo formulário:
@@ -463,9 +438,27 @@ Recebemos sua mensagem e responderemos em breve no email {email}.
         )
     )
 
+
+@ rt("/perguntas")
+def get():
+    return (
+        Title("Perguntas feitas - ICMBio Guia de Gestão"),
+        Div(
+            navbar(),
+            Div(
+                Div(
+                    H2("Em Breve: Histórico de perguntas",
+                        cls="text-2xl font-bold mb-4"),
+                    cls="max-w-2xl mx-auto p-6 bg-base-100 shadow-xl rounded-lg"
+                ),
+                cls="container mx-auto px-4 py-8 flex justify-center items-center min-h-[calc(100vh-64px)]"
+            ),
+            cls="flex flex-col min-h-screen"
+        )
+    )
+
+
 # Helpers
-
-
 def sanitize_filename(filename):
     name, ext = os.path.splitext(filename)
     safe_name = re.sub(r'[^a-zA-Z0-9]', '_', name)

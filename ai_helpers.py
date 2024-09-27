@@ -185,9 +185,9 @@ def nome_macroprocesso(option: str):
     return macroprocessos.get(option, "Não foi possível identificar o macroprocesso.")
 
 
-def parse_documents(documents: list):
+def parse_documents(documents: dict):
     data = ""
-    for document in documents:
+    for document in documents['documents']:
         data += f"\n\n**Arquivo**: {document.metadata['filename']}\n"
         data += f"**Página**: {document.metadata['page_number']}\n"
         data += f"**Fragmento**: {document.page_content}\n\n"

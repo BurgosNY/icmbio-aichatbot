@@ -11,6 +11,15 @@ a {
     @apply text-blue-500;
 }
 
+h2 {
+    @apply text-2xl font-bold;
+}
+
+h3 {
+    @apply text-xl font-bold;
+}
+
+
 @keyframes blinker {
     0% {
         opacity: 1;
